@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+    <book id="1">
+        <name>Война и мир</name>
+        <author>Лев Толстой</author>
+        <publisher>Эксмо</publisher>
+        <circulation>50000</circulation>
+        <number_of_volumes>4</number_of_volumes>
+        <total_volumes>200000</total_volumes>
+    </book>
+    <book id="2">
+        <name>Преступление и наказание</name>
+        <author>Фёдор Достоевский</author>
+        <publisher>АСТ</publisher>
+        <circulation>30000</circulation>
+        <number_of_volumes>1</number_of_volumes>
+        <total_volumes>30000</total_volumes>
+    </book>
+    <book id="3">
+        <name>Анна Каренина</name>
+        <author>Лев Толстой</author>
+        <publisher>Азбука</publisher>
+        <circulation>25000</circulation>
+        <number_of_volumes>2</number_of_volumes>
+        <total_volumes>50000</total_volumes>
+    </book>
+    <book id="4">
+        <name>Мастер и Маргарита</name>
+        <author>Михаил Булгаков</author>
+        <publisher>Эксмо</publisher>
+        <circulation>100000</circulation>
+        <number_of_volumes>1</number_of_volumes>
+        <total_volumes>100000</total_volumes>
+    </book>
+    <book id="5">
+        <name>Тихий Дон</name>
+        <author>Михаил Шолохов</author>
+        <publisher>АСТ</publisher>
+        <circulation>20000</circulation>
+        <number_of_volumes>4</number_of_volumes>
+        <total_volumes>80000</total_volumes>
+    </book>
+    <book id="6">
+        <name>Доктор Живаго</name>
+        <author>Борис Пастернак</author>
+        <publisher>Азбука</publisher>
+        <circulation>15000</circulation>
+        <number_of_volumes>1</number_of_volumes>
+        <total_volumes>15000</total_volumes>
+    </book>
+    <book id="7">
+        <name>Отцы и дети</name>
+        <author>Иван Тургенев</author>
+        <publisher>Просвещение</publisher>
+        <circulation>50000</circulation>
+        <number_of_volumes>1</number_of_volumes>
+        <total_volumes>50000</total_volumes>
+    </book>
+    <book id="8">
+        <name>Герой нашего времени</name>
+        <author>Михаил Лермонтов</author>
+        <publisher>Дрофа</publisher>
+        <circulation>40000</circulation>
+        <number_of_volumes>1</number_of_volumes>
+        <total_volumes>40000</total_volumes>
+    </book>
+    <book id="9">
+        <name>Мёртвые души</name>
+        <author>Николай Гоголь</author>
+        <publisher>Эксмо</publisher>
+        <circulation>35000</circulation>
+        <number_of_volumes>1</number_of_volumes>
+        <total_volumes>35000</total_volumes>
+    </book>
+    <book id="10">
+        <name>Евгений Онегин</name>
+        <author>Александр Пушкин</author>
+        <publisher>Просвещение</publisher>
+        <circulation>100000</circulation>
+        <number_of_volumes>1</number_of_volumes>
+        <total_volumes>100000</total_volumes>
+    </book>
+</catalog>
