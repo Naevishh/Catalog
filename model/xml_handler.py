@@ -99,7 +99,7 @@ class XMLBookWriter:
 
 # (Facade)
 class XMLHandler:
-    def __init__(self, filename: str = "catalog.xml", root_tag: str = "catalog"):
+    def __init__(self, filename: str = "catalog_example.xml", root_tag: str = "catalog"):
         self.filename = filename
         self.root_tag = root_tag
 

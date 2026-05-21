@@ -16,7 +16,7 @@ def main():
     app.setStyle("Fusion")  # Кроссплатформенный стиль интерфейса
 
     # Файл для автосохранения/загрузки по умолчанию
-    DEFAULT_XML = "catalog.xml"
+    DEFAULT_XML = "catalog_example.xml"
 
     # 2. Создание Model
     xml_handler = XMLHandler(DEFAULT_XML)

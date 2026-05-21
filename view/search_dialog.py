@@ -120,6 +120,11 @@ class SearchDialog(QDialog):
         self.btn_next = QPushButton("▶")
         self.btn_last = QPushButton("▶▶")
 
+        self.btn_first.setEnabled(self.current_page > 0)
+        self.btn_prev.setEnabled(self.current_page > 0)
+        self.btn_next.setEnabled(self.current_page < self.total_pages - 1)
+        self.btn_last.setEnabled(self.current_page < self.total_pages - 1)
+
         self.spin_page_size = QSpinBox()
         self.spin_page_size.setRange(5, 50)
         self.spin_page_size.setValue(self.items_per_page)
@@ -132,8 +137,8 @@ class SearchDialog(QDialog):
 
         nav.addWidget(self.btn_first)
         nav.addWidget(self.btn_prev)
-        nav.addWidget(QLabel("На стр.:"))
-        nav.addWidget(self.spin_page_size)
+        # nav.addWidget(QLabel("На стр.:"))
+        # nav.addWidget(self.spin_page_size)
         nav.addSpacing(15)
         nav.addWidget(self.lbl_info)
         nav.addStretch()
@@ -211,6 +216,8 @@ class SearchDialog(QDialog):
         self.search_results = []
         self.current_page = 0
         self._update_table()
+        # self.table.setRowCount(0)
+
 
     @property
     def total_pages(self):
