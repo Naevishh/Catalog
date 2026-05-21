@@ -2,17 +2,25 @@
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QSpinBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QComboBox, QGroupBox, QFormLayout,
-                             QCheckBox, QWidget, QSizePolicy)
+                             QWidget, QHeaderView)
 from PyQt6.QtCore import Qt
-from model.catalog_manager import CatalogManager
 
 
 class SearchDialog(QDialog):
-    def __init__(self, model: CatalogManager, parent=None):
+    """
+    VIEW (Диалог поиска)
+    Отвечает ТОЛЬКО за:
+    1. Отрисовку условий поиска и таблицы результатов
+    2. Сбор критериев из интерфейса
+    3. Постраничный вывод результатов (требование лабы)
+    НЕ ИМПОРТИРУЕТ Model. Делегирует поиск контроллеру.
+    """
+
+    def __init__(self, parent=None, controller=None):
         super().__init__(parent)
-        self.model = model
+        self.controller = controller  # ссылка на контроллер (опционально, для тестов)
         self.setWindowTitle("Поиск книг")
-        self.setMinimumSize(800, 500)
+        self.resize(900, 650)
 
         self.items_per_page = 10
         self.current_page = 0
@@ -20,11 +28,13 @@ class SearchDialog(QDialog):
 
         self._init_ui()
         self._connect_signals()
+        self.vol_max.setValue(10000)
 
+    # ================== ИНИЦИАЛИЗАЦИЯ UI ==================
     def _init_ui(self):
         layout = QVBoxLayout(self)
 
-        # === Панель условий поиска ===
+        # 1. Панель условий поиска (Вариант 15)
         search_group = QGroupBox("Условия поиска")
         form = QFormLayout()
 
@@ -32,36 +42,36 @@ class SearchDialog(QDialog):
         self.author_edit.setPlaceholderText("Часть ФИО автора")
 
         self.publisher_edit = QLineEdit()
-        self.publisher_edit.setPlaceholderText("Название издательства")
+        self.publisher_edit.setPlaceholderText("Издательство")
 
         self.title_edit = QLineEdit()
         self.title_edit.setPlaceholderText("Название книги")
 
-        # Число томов: диапазон
-        self.volumes_min = QSpinBox()
-        self.volumes_min.setRange(0, 10000)
-        self.volumes_max = QSpinBox()
-        self.volumes_max.setRange(0, 10000)
-        volumes_layout = QHBoxLayout()
-        volumes_layout.addWidget(self.volumes_min)
-        volumes_layout.addWidget(QLabel("—"))
-        volumes_layout.addWidget(self.volumes_max)
-        volumes_widget = QWidget()
-        volumes_widget.setLayout(volumes_layout)
+        # Число томов: диапазон (нижний и верхний предел)
+        self.vol_min = QSpinBox()
+        self.vol_min.setRange(1, 10000)
+        self.vol_max = QSpinBox()
+        self.vol_max.setRange(1, 10000)
+        vol_layout = QHBoxLayout()
+        vol_layout.addWidget(self.vol_min)
+        vol_layout.addWidget(QLabel("—"))
+        vol_layout.addWidget(self.vol_max)
+        vol_widget = QWidget(self)
+        vol_widget.setLayout(vol_layout)
 
-        # Тираж: сравнение
-        self.circulation_op = QComboBox()
-        self.circulation_op.addItems(["", ">", "<"])
-        self.circulation_val = QSpinBox()
-        self.circulation_val.setRange(0, 1000000)
-        circulation_layout = QHBoxLayout()
-        circulation_layout.addWidget(self.circulation_op)
-        circulation_layout.addWidget(self.circulation_val)
-        circulation_widget = QWidget()
-        circulation_layout.setContentsMargins(0, 0, 0, 0)
-        circulation_widget.setLayout(circulation_layout)
+        # Тираж: больше/меньше заданной границы
+        self.circ_op = QComboBox()
+        self.circ_op.addItems(["", ">", "<"])
+        self.circ_val = QSpinBox()
+        self.circ_val.setRange(0, 1000000)
+        circ_layout = QHBoxLayout()
+        circ_layout.addWidget(self.circ_op)
+        circ_layout.addWidget(self.circ_val)
+        circ_widget = QWidget()
+        circ_layout.setContentsMargins(0, 0, 0, 0)
+        circ_widget.setLayout(circ_layout)
 
-        # Итого томов: сравнение
+        # Итого томов: больше/меньше заданной границы
         self.total_op = QComboBox()
         self.total_op.addItems(["", ">", "<"])
         self.total_val = QSpinBox()
@@ -74,12 +84,11 @@ class SearchDialog(QDialog):
         total_widget.setLayout(total_layout)
 
         form.addRow("ФИО автора:", self.author_edit)
-        form.addRow("Издательство + автор:", self.publisher_edit)
+        form.addRow("Издательство:", self.publisher_edit)
         form.addRow("Название книги:", self.title_edit)
-        form.addRow("Число томов (диапазон):", volumes_widget)
-        form.addRow("Тираж:", circulation_widget)
-        form.addRow("Итого томов:", total_widget)
-
+        form.addRow("Число томов (диапазон):", vol_widget)
+        form.addRow("Тираж (больше/меньше):", circ_widget)
+        form.addRow("Итого томов (больше/меньше):", total_widget)
         search_group.setLayout(form)
         layout.addWidget(search_group)
 
@@ -92,113 +101,143 @@ class SearchDialog(QDialog):
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
 
-        # === Таблица результатов ===
+        # Таблица результатов
         self.table = QTableWidget()
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
-            "Название", "Автор", "Издательство",
-            "Томов", "Тираж", "Итого"
+            "Название", "ФИО автора", "Издательство",
+            "Число томов", "Тираж", "Итого томов"
         ])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
-        # === Пагинация ===
+        # Пагинация (требование лабы: навигация + изменение размера страницы)
         nav = QHBoxLayout()
         self.btn_first = QPushButton("◀◀")
         self.btn_prev = QPushButton("◀")
         self.btn_next = QPushButton("▶")
         self.btn_last = QPushButton("▶▶")
+
+        self.spin_page_size = QSpinBox()
+        self.spin_page_size.setRange(5, 50)
+        self.spin_page_size.setValue(self.items_per_page)
+        self.spin_page_size.setFixedWidth(60)
+
         self.lbl_info = QLabel()
 
         for btn in [self.btn_first, self.btn_prev, self.btn_next, self.btn_last]:
-            btn.setFixedWidth(50)
+            btn.setFixedWidth(45)
 
         nav.addWidget(self.btn_first)
         nav.addWidget(self.btn_prev)
+        nav.addWidget(QLabel("На стр.:"))
+        nav.addWidget(self.spin_page_size)
+        nav.addSpacing(15)
         nav.addWidget(self.lbl_info)
+        nav.addStretch()
         nav.addWidget(self.btn_next)
         nav.addWidget(self.btn_last)
-        nav.addStretch()
         layout.addLayout(nav)
 
+    # ================== ОБРАБОТЧИКИ UI ==================
     def _connect_signals(self):
         self.search_btn.clicked.connect(self._perform_search)
         self.reset_btn.clicked.connect(self._reset_filters)
+
         self.btn_first.clicked.connect(lambda: self._go_to_page(0))
-        self.btn_prev.clicked.connect(self._prev_page)
-        self.btn_next.clicked.connect(self._next_page)
+        self.btn_prev.clicked.connect(lambda: self._go_to_page(self.current_page - 1))
+        self.btn_next.clicked.connect(lambda: self._go_to_page(self.current_page + 1))
         self.btn_last.clicked.connect(lambda: self._go_to_page(self.total_pages - 1))
 
-    def _perform_search(self):
-        # Сбор критериев
+        self.spin_page_size.valueChanged.connect(self._on_page_size_changed)
+
+    def _collect_criteria(self) -> dict:
+        """Сбор данных из полей ввода в формат, понятный модели."""
         author = self.author_edit.text().strip() or None
         publisher = self.publisher_edit.text().strip() or None
         title = self.title_edit.text().strip() or None
 
         # Диапазон томов
-        v_min = self.volumes_min.value() if self.volumes_min.value() > 0 else None
-        v_max = self.volumes_max.value() if self.volumes_max.value() < 10000 else None
-        volumes_range = (v_min, v_max) if (v_min or v_max) else None
+        v_min = self.vol_min.value() if self.vol_min.value() > 0 else None
+        v_max = self.vol_max.value() if self.vol_max.value() < 10000 else None
+        volumes_range = (v_min, v_max) if (v_min is not None or v_max is not None) else None
 
         # Тираж: оператор + значение
-        circ_op = self.circulation_op.currentText()
-        circ_val = self.circulation_val.value()
+        circ_op = self.circ_op.currentText()
+        circ_val = self.circ_val.value()
         circulation_limit = (circ_op, circ_val) if circ_op and circ_val > 0 else None
 
-        # Итого томов
+        # Итого томов: оператор + значение
         total_op = self.total_op.currentText()
         total_val = self.total_val.value()
-        total_limit = (total_op, total_val) if total_op and total_val > 0 else None
+        total_volumes_limit = (total_op, total_val) if total_op and total_val > 0 else None
 
-        # Вызов поиска в модели
-        self.search_results = self.model.find_book(
-            name=title,
-            author=author,
-            publisher=publisher,
-            volumes_range=volumes_range,
-            circulation_limit=circulation_limit,
-            total_volumes_limit=total_limit
-        )
+        return {
+            'name': title,
+            'author': author,
+            'publisher': publisher,
+            'volumes_range': volumes_range,
+            'circulation_limit': circulation_limit,
+            'total_volumes_limit': total_volumes_limit
+        }
+
+    def _perform_search(self):
+        """Выполняет поиск, делегируя задачу контроллеру."""
+        criteria = self._collect_criteria()
+
+        # MVC: Вызов бизнес-логики через контроллер
+        if self.controller:
+            self.search_results = self.controller.perform_search(criteria)
+        else:
+            self.search_results = []  # fallback для ручных тестов без контроллера
 
         self.current_page = 0
         self._update_table()
 
     def _reset_filters(self):
+        """Очистка полей и таблицы."""
         self.author_edit.clear()
         self.publisher_edit.clear()
         self.title_edit.clear()
-        self.volumes_min.setValue(0)
-        self.volumes_max.setValue(10000)
-        self.circulation_op.setCurrentIndex(0)
-        self.circulation_val.setValue(0)
+        self.vol_min.setValue(0)
+        self.vol_max.setValue(10000)
+        self.circ_op.setCurrentIndex(0)
+        self.circ_val.setValue(0)
         self.total_op.setCurrentIndex(0)
         self.total_val.setValue(0)
+
         self.search_results = []
+        self.current_page = 0
         self._update_table()
 
     @property
     def total_pages(self):
-        return (len(self.search_results) + self.items_per_page - 1) // self.items_per_page or 1
+        return max(1, (len(self.search_results) + self.items_per_page - 1) // self.items_per_page)
 
     def _update_table(self):
+        """Отрисовка текущей страницы результатов."""
         start = self.current_page * self.items_per_page
         end = start + self.items_per_page
         page_items = self.search_results[start:end]
 
         self.table.setRowCount(len(page_items))
         for row, book in enumerate(page_items):
-            self.table.setItem(row, 0, QTableWidgetItem(book.title))
+            # Имена атрибутов должны совпадать с вашим классом Book
+            self.table.setItem(row, 0, QTableWidgetItem(book.name))
             self.table.setItem(row, 1, QTableWidgetItem(book.author))
             self.table.setItem(row, 2, QTableWidgetItem(book.publisher))
             self.table.setItem(row, 3, QTableWidgetItem(str(book.volumes)))
-            self.table.setItem(row, 4, QTableWidgetItem(str(book.print_run)))
+            self.table.setItem(row, 4, QTableWidgetItem(str(book.circulation)))
             self.table.setItem(row, 5, QTableWidgetItem(str(book.total_volumes)))
 
         total = len(self.search_results)
-        self.lbl_info.setText(f"Стр. {self.current_page + 1}/{self.total_pages} • Найдено: {total}")
+        self.lbl_info.setText(
+            f"Стр. {self.current_page + 1}/{self.total_pages} • Найдено: {total}"
+        )
 
-        # Блокировка кнопок
+        # Блокировка кнопок навигации
         self.btn_first.setEnabled(self.current_page > 0)
         self.btn_prev.setEnabled(self.current_page > 0)
         self.btn_next.setEnabled(self.current_page < self.total_pages - 1)
@@ -209,12 +248,7 @@ class SearchDialog(QDialog):
             self.current_page = page
             self._update_table()
 
-    def _prev_page(self):
-        if self.current_page > 0:
-            self.current_page -= 1
-            self._update_table()
-
-    def _next_page(self):
-        if self.current_page < self.total_pages - 1:
-            self.current_page += 1
-            self._update_table()
+    def _on_page_size_changed(self, value: int):
+        self.items_per_page = value
+        self.current_page = 0
+        self._update_table()

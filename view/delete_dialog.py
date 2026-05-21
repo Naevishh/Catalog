@@ -2,51 +2,63 @@
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QSpinBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QComboBox, QGroupBox, QFormLayout,
-                             QMessageBox, QWidget)
+                             QWidget, QMessageBox, QHeaderView)
 from PyQt6.QtCore import Qt
-from model.catalog_manager import CatalogManager
 
 
 class DeleteDialog(QDialog):
-    def __init__(self, model: CatalogManager, parent=None):
+    """
+    VIEW (Диалог удаления)
+    Отвечает ТОЛЬКО за:
+    1. Отрисовку условий удаления и таблицы предпросмотра
+    2. Сбор критериев из интерфейса
+    3. Вызов предпросмотра и удаление через контроллер
+    4. Возврат количества удалённых записей (deleted_count)
+    НЕ ИМПОРТИРУЕТ Model. Не выполняет бизнес-логику.
+    """
+
+    def __init__(self, parent=None, controller=None):
         super().__init__(parent)
-        self.model = model
-        self.setWindowTitle("Удаление записей")
-        self.setMinimumSize(700, 450)
-        self.deleted_count = 0  # Для отображения в главном окне
+        self.controller = controller
+        self.deleted_count = 0  # Возвращается в controller после accept()
+        self.preview_results = []
+
+        self.setWindowTitle("Удаление записей по условию")
+        self.resize(850, 550)
 
         self._init_ui()
         self._connect_signals()
 
+    # ================== ИНИЦИАЛИЗАЦИЯ UI ==================
     def _init_ui(self):
         layout = QVBoxLayout(self)
 
-        # === Условия удаления (аналогично поиску) ===
+        # 1. Панель условий (полностью соответствует Варианту 15)
         cond_group = QGroupBox("Условия удаления")
         form = QFormLayout()
 
         self.author_edit = QLineEdit()
-        self.author_edit.setPlaceholderText("Часть ФИО автора")
+        self.author_edit.setPlaceholderText("ФИО автора (часть или полностью)")
 
         self.publisher_edit = QLineEdit()
-        self.publisher_edit.setPlaceholderText("Название издательства")
+        self.publisher_edit.setPlaceholderText("Издательство")
 
         self.title_edit = QLineEdit()
         self.title_edit.setPlaceholderText("Название книги")
 
-        # Диапазон томов
-        self.volumes_min = QSpinBox()
-        self.volumes_min.setRange(0, 10000)
-        self.volumes_max = QSpinBox()
-        self.volumes_max.setRange(0, 10000)
+        # Число томов: диапазон
+        self.vol_min = QSpinBox()
+        self.vol_min.setRange(1, 10000)
+        self.vol_max = QSpinBox()
+        self.vol_max.setRange(1, 10000)
         vol_layout = QHBoxLayout()
-        vol_layout.addWidget(self.volumes_min)
+        vol_layout.addWidget(self.vol_min)
         vol_layout.addWidget(QLabel("—"))
-        vol_layout.addWidget(self.volumes_max)
+        vol_layout.addWidget(self.vol_max)
         vol_widget = QWidget()
         vol_widget.setLayout(vol_layout)
 
-        # Тираж
+        # Тираж: больше/меньше
         self.circ_op = QComboBox()
         self.circ_op.addItems(["", ">", "<"])
         self.circ_val = QSpinBox()
@@ -58,7 +70,7 @@ class DeleteDialog(QDialog):
         circ_layout.setContentsMargins(0, 0, 0, 0)
         circ_widget.setLayout(circ_layout)
 
-        # Итого томов
+        # Итого томов: больше/меньше
         self.total_op = QComboBox()
         self.total_op.addItems(["", ">", "<"])
         self.total_val = QSpinBox()
@@ -71,53 +83,56 @@ class DeleteDialog(QDialog):
         total_widget.setLayout(total_layout)
 
         form.addRow("ФИО автора:", self.author_edit)
-        form.addRow("Издательство + автор:", self.publisher_edit)
+        form.addRow("Издательство:", self.publisher_edit)
         form.addRow("Название книги:", self.title_edit)
-        form.addRow("Число томов:", vol_widget)
-        form.addRow("Тираж:", circ_widget)
-        form.addRow("Итого томов:", total_widget)
+        form.addRow("Число томов (диапазон):", vol_widget)
+        form.addRow("Тираж (больше/меньше):", circ_widget)
+        form.addRow("Итого томов (больше/меньше):", total_widget)
         cond_group.setLayout(form)
         layout.addWidget(cond_group)
 
-        # Кнопки: предпросмотр / удалить / отмена
+        # 2. Кнопки управления
         btn_layout = QHBoxLayout()
         self.preview_btn = QPushButton("👁 Предпросмотр")
         self.delete_btn = QPushButton("🗑 Удалить")
-        self.cancel_btn = QPushButton("Отмена")
-        self.delete_btn.setStyleSheet("background-color: #f44336; color: white;")
+        self.delete_btn.setStyleSheet("background-color: #e74c3c; color: white; font-weight: bold;")
+        self.cancel_btn = QPushButton("❌ Отмена")
 
         btn_layout.addWidget(self.preview_btn)
         btn_layout.addWidget(self.delete_btn)
         btn_layout.addWidget(self.cancel_btn)
         layout.addLayout(btn_layout)
 
-        # Таблица предпросмотра
-        self.preview_label = QLabel("Нажмите «Предпросмотр», чтобы увидеть записи для удаления")
-        layout.addWidget(self.preview_label)
+        # 3. Таблица предпросмотра
+        self.lbl_preview_info = QLabel("Нажмите «Предпросмотр», чтобы увидеть записи для удаления")
+        layout.addWidget(self.lbl_preview_info)
 
         self.table = QTableWidget()
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
-            "Название", "Автор", "Издательство",
-            "Томов", "Тираж", "Итого"
+            "Название", "ФИО автора", "Издательство",
+            "Томов", "Тираж", "Итого томов"
         ])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
+    # ================== ОБРАБОТЧИКИ UI ==================
     def _connect_signals(self):
-        self.preview_btn.clicked.connect(self._preview_delete)
-        self.delete_btn.clicked.connect(self._confirm_and_delete)
+        self.preview_btn.clicked.connect(self._preview)
+        self.delete_btn.clicked.connect(self._execute_delete)
         self.cancel_btn.clicked.connect(self.reject)
 
-    def _collect_criteria(self):
+    def _collect_criteria(self) -> dict:
+        """Сбор условий в формат, совместимый с CatalogManager.find_book()"""
         author = self.author_edit.text().strip() or None
         publisher = self.publisher_edit.text().strip() or None
         title = self.title_edit.text().strip() or None
 
-        v_min = self.volumes_min.value() if self.volumes_min.value() > 0 else None
-        v_max = self.volumes_max.value() if self.volumes_max.value() < 10000 else None
-        volumes_range = (v_min, v_max) if (v_min or v_max) else None
+        v_min = self.vol_min.value() if self.vol_min.value() > 0 else None
+        v_max = self.vol_max.value() if self.vol_max.value() < 10000 else None
+        volumes_range = (v_min, v_max) if (v_min is not None or v_max is not None) else None
 
         circ_op = self.circ_op.currentText()
         circ_val = self.circ_val.value()
@@ -125,7 +140,7 @@ class DeleteDialog(QDialog):
 
         total_op = self.total_op.currentText()
         total_val = self.total_val.value()
-        total_limit = (total_op, total_val) if total_op and total_val > 0 else None
+        total_volumes_limit = (total_op, total_val) if total_op and total_val > 0 else None
 
         return {
             'name': title,
@@ -133,50 +148,60 @@ class DeleteDialog(QDialog):
             'publisher': publisher,
             'volumes_range': volumes_range,
             'circulation_limit': circulation_limit,
-            'total_volumes_limit': total_limit
+            'total_volumes_limit': total_volumes_limit
         }
 
-    def _preview_delete(self):
+    def _preview(self):
+        """Предпросмотр: делегирует поиск контроллеру"""
         criteria = self._collect_criteria()
-        results = self.model.find_book(**criteria)
 
-        if not results:
-            QMessageBox.information(self, "Предпросмотр", "Записи не найдены по заданным условиям")
-            self.table.setRowCount(0)
-            self.preview_label.setText("Ничего не найдено")
+        # Проверка: задано ли хотя бы одно условие
+        if all(v is None for v in criteria.values()):
+            QMessageBox.warning(self, "Предпросмотр", "Укажите хотя бы одно условие для поиска.")
             return
 
-        self.table.setRowCount(len(results))
-        for row, book in enumerate(results):
-            self.table.setItem(row, 0, QTableWidgetItem(book.title))
+        if self.controller:
+            self.preview_results = self.controller.perform_search(criteria)
+        else:
+            self.preview_results = []
+
+        self._render_preview()
+
+    def _render_preview(self):
+        """Отрисовка таблицы предпросмотра"""
+        self.table.setRowCount(len(self.preview_results))
+        for row, book in enumerate(self.preview_results):
+            self.table.setItem(row, 0, QTableWidgetItem(book.name))
             self.table.setItem(row, 1, QTableWidgetItem(book.author))
             self.table.setItem(row, 2, QTableWidgetItem(book.publisher))
             self.table.setItem(row, 3, QTableWidgetItem(str(book.volumes)))
-            self.table.setItem(row, 4, QTableWidgetItem(str(book.print_run)))
+            self.table.setItem(row, 4, QTableWidgetItem(str(book.circulation)))
             self.table.setItem(row, 5, QTableWidgetItem(str(book.total_volumes)))
 
-        self.preview_label.setText(f"Найдено записей для удаления: {len(results)}")
+        if self.preview_results:
+            self.lbl_preview_info.setText(f"🔍 Найдено записей для удаления: {len(self.preview_results)}")
+        else:
+            self.lbl_preview_info.setText("⚠ Записи, соответствующие условиям, не найдены")
 
-    def _confirm_and_delete(self):
-        criteria = self._collect_criteria()
-        results = self.model.find_book(**criteria)
-
-        if not results:
-            QMessageBox.warning(self, "Удаление", "Нет записей для удаления")
+    def _execute_delete(self):
+        """Подтверждение и выполнение удаления через контроллер"""
+        if not self.preview_results:
+            QMessageBox.warning(self, "Удаление", "Сначала выполните предпросмотр, чтобы выбрать записи.")
             return
 
-        # Подтверждение
         reply = QMessageBox.question(
-            self, "Подтверждение",
-            f"Удалить {len(results)} записей?\nЭто действие нельзя отменить.",
+            self, "Подтверждение удаления",
+            f"Вы действительно хотите удалить {len(self.preview_results)} записей?\n"
+            f"Это действие нельзя отменить.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            self.deleted_count = self.model.delete_by_criteria(**criteria)
-            QMessageBox.information(
-                self, "Готово",
-                f"Удалено записей: {self.deleted_count}" if self.deleted_count > 0
-                else "Записи не найдены"
-            )
+            criteria = self._collect_criteria()
+            if self.controller:
+                self.deleted_count = self.controller.perform_delete(criteria)
+            else:
+                self.deleted_count = 0
+
+            # Диалог закрывается, controller/main_window покажет итоговое сообщение
             self.accept()

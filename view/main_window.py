@@ -1,54 +1,68 @@
-# views/main_window.py (ваш код с доработками)
-import sys
-
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QHBoxLayout, QPushButton, \
-    QLabel, QMenuBar, QToolBar, QApplication, QHeaderView
-from PyQt6.QtCore import Qt
-from model.book import Book
-from model.catalog_manager import CatalogManager
-from model.xml_handler import XMLHandler
-
-from view.search_dialog import SearchDialog
-from view.delete_dialog import DeleteDialog
-from view.edit_dialog import EditDialog
+from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QTableWidget, QTableWidgetItem, QHeaderView,
+    QPushButton, QLabel, QMenuBar, QToolBar,
+    QSpinBox, QMessageBox
+)
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import QSizePolicy
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, model: CatalogManager):
-        super().__init__()
-        self.model = model  # ← ссылка на модель
+    """
+    VIEW (Представление)
+    Отвечает только за отрисовку интерфейса и реакцию на действия пользователя.
+    Ничего не знает о Model и бизнес-логике.
+    """
+    # Сигналы: "крики" интерфейса, которые ловит Controller
+    request_add = pyqtSignal()
+    request_search = pyqtSignal()
+    request_delete = pyqtSignal()
+    request_save = pyqtSignal()
+    request_load = pyqtSignal()
+    page_changed = pyqtSignal(int)  # номер страницы
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.controller = None  # устанавливается извне (Dependency Injection)
         self.items_per_page = 10
         self.current_page = 0
+        self.total_pages = 1
+        self.total_count = 0
 
         self._init_ui()
-        self._connect_signals()
-        self.model.add_observer(self)  # подписка на изменения
+        self._connect_ui_signals()
 
+    def set_controller(self, controller):
+        """Внедрение контроллера. Вызывается из main.py после создания объектов."""
+        self.controller = controller
+
+    # ================== ИНИЦИАЛИЗАЦИЯ UI ==================
     def _init_ui(self):
-        self.setWindowTitle("Каталог книг")
-        self.resize(900, 500)
+        self.setWindowTitle("Каталог книг (Вариант 15)")
+        self.resize(1000, 650)
 
-        # Меню
-        menu = self.menuBar()
-        file_menu = menu.addMenu("Файл")
-        file_menu.addAction("Сохранить как XML...", self.save_xml)
-        file_menu.addAction("Загрузить из XML...", self.load_xml)
+        # 1. Меню
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu("Файл")
+        file_menu.addAction("Сохранить в XML...", self._on_save)
+        file_menu.addAction("Загрузить из XML...", self._on_load)
         file_menu.addSeparator()
         file_menu.addAction("Выход", self.close)
 
-        edit_menu = menu.addMenu("Действия")
-        edit_menu.addAction("Добавить книгу...", self.open_edit_dialog)
-        edit_menu.addAction("Поиск...", self.open_search_dialog)
-        edit_menu.addAction("Удалить...", self.open_delete_dialog)
+        actions_menu = menu_bar.addMenu("Действия")
+        actions_menu.addAction("Добавить книгу...", self._on_add)
+        actions_menu.addAction("Поиск...", self._on_search)
+        actions_menu.addAction("Удалить по условию...", self._on_delete)
 
-        # Панель инструментов (дублирование команд меню)
+        # 2. Панель инструментов (дублирует меню)
         toolbar = QToolBar("Инструменты")
         self.addToolBar(toolbar)
-        toolbar.addAction("Добавить", self.open_edit_dialog)
-        toolbar.addAction("Поиск", self.open_search_dialog)
-        toolbar.addAction("Удалить", self.open_delete_dialog)
+        toolbar.addAction("➕ Добавить", self._on_add)
+        toolbar.addAction("🔍 Поиск", self._on_search)
+        toolbar.addAction("🗑 Удалить", self._on_delete)
 
-        # Центральная область с таблицей
+        # 3. Центральная область
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
@@ -60,117 +74,102 @@ class MainWindow(QMainWindow):
             "Число томов", "Тираж", "Итого томов"
         ])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
-        # Навигация по страницам
+        # 4. Пагинация (по ТЗ лабы)
         nav = QHBoxLayout()
         self.btn_first = QPushButton("◀◀")
         self.btn_prev = QPushButton("◀")
         self.btn_next = QPushButton("▶")
         self.btn_last = QPushButton("▶▶")
-        self.lbl_info = QLabel()
+
+        self.lbl_info = QLabel("Стр. 0/0 • Всего: 0")
+        self.lbl_info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # разрешаем метке занимать свободное место
+        self.lbl_info.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         for btn in [self.btn_first, self.btn_prev, self.btn_next, self.btn_last]:
-            btn.setFixedWidth(60)
+            btn.setFixedWidth(50)
+
+        # 🔧 Ключевое исправление: stretch с обеих сторон для равномерного распределения
+        nav.addStretch()
         nav.addWidget(self.btn_first)
         nav.addWidget(self.btn_prev)
+        # nav.addWidget(self.spin_page_size)  # если нужно — добавьте спиннер в панель
         nav.addWidget(self.lbl_info)
         nav.addWidget(self.btn_next)
         nav.addWidget(self.btn_last)
+        nav.addStretch()
+
         layout.addLayout(nav)
 
-    def _connect_signals(self):
-        self.btn_first.clicked.connect(lambda: self.go_to_page(0))
-        self.btn_prev.clicked.connect(self.prev_page)
-        self.btn_next.clicked.connect(self.next_page)
-        self.btn_last.clicked.connect(lambda: self.go_to_page(self.total_pages - 1))
+    # ================== ВНУТРЕННИЕ ОБРАБОТЧИКИ UI ==================
+    def _connect_ui_signals(self):
+        self.btn_first.clicked.connect(lambda: self._go_to_page(0))
+        self.btn_prev.clicked.connect(lambda: self._go_to_page(self.current_page - 1))
+        self.btn_next.clicked.connect(lambda: self._go_to_page(self.current_page + 1))
+        self.btn_last.clicked.connect(lambda: self._go_to_page(self.total_pages - 1))
 
-    def model_changed(self):
-        self.current_page = 0  # Сброс на первую страницу
-        self.update_table()
+    def _go_to_page(self, page: int):
+        if 0 <= page < self.total_pages:
+            self.current_page = page
+            self.page_changed.emit(page)  # Сообщаем контроллеру: "нужна страница X"
 
-    # === Диалоги ===
-    def open_edit_dialog(self):
-        dlg = EditDialog(self.model, parent=self)
-        if dlg.exec():
-            self.refresh_view()  # обновить таблицу после добавления
+    # Эмитим сигналы при кликах по меню/кнопкам
+    def _on_add(self):
+        self.request_add.emit()
 
-    def open_search_dialog(self):
-        dlg = SearchDialog(self.model, parent=self)
-        dlg.exec()  # поиск отображается внутри диалога, главное окно не меняется
+    def _on_search(self):
+        self.request_search.emit()
 
-    def open_delete_dialog(self):
-        dlg = DeleteDialog(self.model, parent=self)
-        if dlg.exec():  # если пользователь подтвердил удаление
-            self.refresh_view()
-            # Показать сообщение о результате
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.information(self, "Удаление",
-                                    f"Удалено записей: {dlg.deleted_count}" if dlg.deleted_count > 0
-                                    else "Записи не найдены")
+    def _on_delete(self):
+        self.request_delete.emit()
 
-    # === Работа с таблицей ===
-    @property
-    def total_pages(self):
-        return (len(self.model.books) + self.items_per_page - 1) // self.items_per_page or 1
+    def _on_save(self):
+        self.request_save.emit()
 
-    def refresh_view(self):
-        self.current_page = 0  # сброс на первую страницу при изменении данных
-        self.update_table()
+    def _on_load(self):
+        self.request_load.emit()
 
-    def update_table(self):
-        start = self.current_page * self.items_per_page
-        end = start + self.items_per_page
-        page_books = self.model.books[start:end]
-
-        self.table.setRowCount(len(page_books))
-        for row, book in enumerate(page_books):
+    # ================== МЕТОДЫ ДЛЯ CONTROLLER ==================
+    def update_table(self, books: list, page: int, page_size: int, total_count: int):
+        """Controller вызывает этот метод, чтобы отрисовать данные."""
+        self.table.setRowCount(len(books))
+        for row, book in enumerate(books):
             self.table.setItem(row, 0, QTableWidgetItem(book.name))
             self.table.setItem(row, 1, QTableWidgetItem(book.author))
             self.table.setItem(row, 2, QTableWidgetItem(book.publisher))
             self.table.setItem(row, 3, QTableWidgetItem(str(book.volumes)))
             self.table.setItem(row, 4, QTableWidgetItem(str(book.circulation)))
-            self.table.setItem(row, 5, QTableWidgetItem(str(book.total_volumes)))  # вычисляемое
+            self.table.setItem(row, 5, QTableWidgetItem(str(book.total_volumes)))
 
-        total = len(self.model.books)
-        self.lbl_info.setText(f"Стр. {self.current_page + 1}/{self.total_pages} • Всего: {total}")
+        self.current_page = page
+        self.items_per_page = page_size
+        self.total_count = total_count
+        self.total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
 
-        # Блокировка кнопок
+        # Обновляем инфо-панель
+        self.lbl_info.setText(
+            f"Стр. {self.current_page + 1}/{self.total_pages} • "
+            f"Всего: {self.total_count} • Показано: {len(books)}"
+        )
+
+        # Состояние кнопок пагинации
         self.btn_first.setEnabled(self.current_page > 0)
         self.btn_prev.setEnabled(self.current_page > 0)
         self.btn_next.setEnabled(self.current_page < self.total_pages - 1)
         self.btn_last.setEnabled(self.current_page < self.total_pages - 1)
 
-    def go_to_page(self, page: int):
-        if 0 <= page < self.total_pages:
-            self.current_page = page
-            self.update_table()
+    def show_info(self, title: str, message: str):
+        QMessageBox.information(self, title, message)
 
-    def prev_page(self):
-        if self.current_page > 0:
-            self.current_page -= 1
-            self.update_table()
+    def show_error(self, title: str, message: str):
+        QMessageBox.critical(self, title, message)
 
-    def next_page(self):
-        if self.current_page < self.total_pages - 1:
-            self.current_page += 1
-            self.update_table()
-
-    # === XML: сохранение (DOM) / загрузка (SAX) ===
-    def save_xml(self):
-        self.model.save_to_xml()  # реализуйте в model.py
-
-    def load_xml(self):
-        self.model.load_from_xml()  # реализуйте в model.py
-        self.refresh_view()
-
-
-if __name__ == "__main__":
-
-    xmlh=XMLHandler()
-    c=CatalogManager(xmlh)
-    app = QApplication(sys.argv)
-    window = MainWindow(c)
-    window.show()
-    sys.exit(app.exec())
+    def ask_confirmation(self, title: str, message: str) -> bool:
+        return QMessageBox.question(
+            self, title, message,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        ) == QMessageBox.StandardButton.Yes

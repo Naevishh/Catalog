@@ -23,6 +23,8 @@ class XMLInitializer:
     def _ensure_initialized(self) -> None:
         if self.filepath.exists():
             return
+        else:
+            print("file doesnt exist!!")
 
         doc = minidom.Document()
         root = doc.createElement(self.root_tag)
@@ -64,7 +66,6 @@ class XMLBookReader:
         parser = xml.sax.make_parser()
         handler = self._BookHandler()
         parser.setContentHandler(handler)
-        # 🔧 Исправлено: больше не перезаписываем self.filepath захардкоженным путём
         parser.parse(str(self.filepath))
         return handler.books
 
@@ -73,7 +74,6 @@ class XMLBookWriter:
     def __init__(self, filename: str, root_tag: str = "catalog"):
         self.filepath = get_filepath(filename)
         self.root_tag = root_tag
-        # Загружаем DOM один раз при создании
         self.doc = minidom.parse(str(self.filepath))
 
     def create_book(self, **kwargs) -> minidom.Element:
@@ -82,7 +82,6 @@ class XMLBookWriter:
         book_id = kwargs.pop('id', str(uuid.uuid4())[:8])
         book.setAttribute('id', book_id)
 
-        # 🔧 Исправлено: убран небезопасный locals(), используем явные kwargs
         for tag_name, value in kwargs.items():
             el = self.doc.createElement(tag_name)
             el.appendChild(self.doc.createTextNode(str(value)))
@@ -139,30 +138,30 @@ class XMLHandler:
             self._writer.add_book(data)
 
 
-if __name__ == "__main__":
-    # # Пример XML-данных
-    # xml_data = """
-    # <catalog>
-    #     <book id="1" category="books">
-    #         <title>Python Basics</title>
-    #         <author>John Doe</author>
-    #     </book>
-    #     <book id="2" category="electronics">
-    #         <title>Laptop</title>
-    #         <author>Jane Smith</author>
-    #     </book>
-    # </catalog>
-    # """
-
-    real_books = [
-        # Русская классика
-        ('Война и мир', 'Лев Толстой', 'Эксмо', 4, 50000),
-        ('Преступление и наказание', 'Фёдор Достоевский', 'АСТ', 1, 30000),
-        ('Анна Каренина', 'Лев Толстой', 'Азбука', 2, 25000),
-        ('Мастер и Маргарита', 'Михаил Булгаков', 'Эксмо', 1, 100000),
-        ('Тихий Дон', 'Михаил Шолохов', 'АСТ', 4, 20000),
-        ('Доктор Живаго', 'Борис Пастернак', 'Азбука', 1, 15000),
-        ('Отцы и дети', 'Иван Тургенев', 'Просвещение', 1, 50000),
-        ('Герой нашего времени', 'Михаил Лермонтов', 'Дрофа', 1, 40000),
-        ('Мёртвые души', 'Николай Гоголь', 'Эксмо', 1, 35000),
-        ('Евгений Онегин', 'Александр Пушкин', 'Просвещение', 1, 100000)]
+# if __name__ == "__main__":
+#     # # Пример XML-данных
+#     # xml_data = """
+#     # <catalog>
+#     #     <book id="1" category="books">
+#     #         <title>Python Basics</title>
+#     #         <author>John Doe</author>
+#     #     </book>
+#     #     <book id="2" category="electronics">
+#     #         <title>Laptop</title>
+#     #         <author>Jane Smith</author>
+#     #     </book>
+#     # </catalog>
+#     # """
+#
+#     real_books = [
+#         # Русская классика
+#         ('Война и мир', 'Лев Толстой', 'Эксмо', 4, 50000),
+#         ('Преступление и наказание', 'Фёдор Достоевский', 'АСТ', 1, 30000),
+#         ('Анна Каренина', 'Лев Толстой', 'Азбука', 2, 25000),
+#         ('Мастер и Маргарита', 'Михаил Булгаков', 'Эксмо', 1, 100000),
+#         ('Тихий Дон', 'Михаил Шолохов', 'АСТ', 4, 20000),
+#         ('Доктор Живаго', 'Борис Пастернак', 'Азбука', 1, 15000),
+#         ('Отцы и дети', 'Иван Тургенев', 'Просвещение', 1, 50000),
+#         ('Герой нашего времени', 'Михаил Лермонтов', 'Дрофа', 1, 40000),
+#         ('Мёртвые души', 'Николай Гоголь', 'Эксмо', 1, 35000),
+#         ('Евгений Онегин', 'Александр Пушкин', 'Просвещение', 1, 100000)]

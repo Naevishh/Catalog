@@ -15,7 +15,7 @@ class CatalogManager:
         raw_books = self.xml_handler.get_books()
         self.books = [self._to_book(d) for d in raw_books]
         # Уведомляем view, что данные загружены
-        self.notify_observers()
+        # self.notify_observers()
 
     def save_to_xml(self) -> None:
         raw_books = [self._to_dict(b) for b in self.books]
@@ -55,7 +55,6 @@ class CatalogManager:
 
     def add_book(self, name: str, author: str, publisher: str,
                  circulation: int, number_of_volumes: int) -> None:
-        total = circulation * number_of_volumes
 
         new_book = Book(
             name=name,
@@ -65,8 +64,6 @@ class CatalogManager:
             volumes=number_of_volumes,
         )
         self.books.append(new_book)
-        self.notify_observers()  # <--- ВАЖНО: Сообщаем об изменении
-        #self.save_to_xml()  # <--- Опционально: автосохранение при добавлении
 
     def delete_by_criteria(self, **kwargs) -> int:
         """
@@ -85,8 +82,8 @@ class CatalogManager:
 
         deleted_count = initial_count - len(self.books)
 
-        if deleted_count > 0:
-            self.notify_observers()  # <--- ВАЖНО: Сообщаем об изменении
+        # if deleted_count > 0:
+            # self.notify_observers()  # <--- ВАЖНО: Сообщаем об изменении
             #self.save_to_xml()  # <--- Опционально: автосохранение
 
         return deleted_count
@@ -95,9 +92,9 @@ class CatalogManager:
                   name: Optional[str] = None,
                   author: Optional[str] = None,
                   publisher: Optional[str] = None,
-                  circulation_limit: Optional[tuple] = None,  # ('less'|'more', value)
+                  circulation_limit: Optional[tuple] = None,  # ('<'|'>', value)
                   volumes_range: Optional[tuple] = None,  # (min, max)
-                  total_volumes_limit: Optional[tuple] = None  # ('less'|'more', value)
+                  total_volumes_limit: Optional[tuple] = None  # ('<'|'>', value)
                   ) -> List[Book]:
 
         result = []
@@ -125,33 +122,19 @@ class CatalogManager:
             # 5. Тираж (больше/меньше)
             if circulation_limit:
                 op, val = circulation_limit
-                if op == 'less' and not (book.circulation < val):
+                if op == '<' and not (book.circulation < val):
                     continue
-                if op == 'more' and not (book.circulation > val):
+                if op == '>' and not (book.circulation > val):
                     continue
 
             # 6. Итого томов (больше/меньше)
             if total_volumes_limit:
                 op, val = total_volumes_limit
-                if op == 'less' and not (book.total_volumes < val):
+                if op == '<' and not (book.total_volumes < val):
                     continue
-                if op == 'more' and not (book.total_volumes > val):
+                if op == '>' and not (book.total_volumes > val):
                     continue
 
             result.append(book)
 
         return result
-
-    # --- Наблюдатели ---
-
-    def add_observer(self, observer):
-        if observer not in self.observers:
-            self.observers.append(observer)
-
-    def remove_observer(self, observer):
-        if observer in self.observers:
-            self.observers.remove(observer)
-
-    def notify_observers(self):
-        for obs in self.observers:
-            obs.model_changed()
