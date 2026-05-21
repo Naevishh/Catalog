@@ -1,8 +1,8 @@
-import xml.sax
-from xml.dom import minidom
-from pathlib import Path
 import uuid
+import xml.sax
+from pathlib import Path
 from typing import Dict, List, Optional
+from xml.dom import minidom
 
 
 def get_filepath(file_name: str) -> Path:
@@ -136,7 +136,6 @@ class XMLHandler:
         # Добавляем новые
         for data in books_list:
             self._writer.add_book(data)
-
 
 # if __name__ == "__main__":
 #     # # Пример XML-данных

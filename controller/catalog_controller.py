@@ -1,9 +1,10 @@
 from typing import Dict, List
+
 from model.catalog_manager import CatalogManager
-from view.main_window import MainWindow
-from view.edit_dialog import EditDialog
-from view.search_dialog import SearchDialog
+from view.add_dialog import EditDialog
 from view.delete_dialog import DeleteDialog
+from view.main_window import MainWindow
+from view.search_dialog import SearchDialog
 
 
 class CatalogController:

@@ -1,11 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
 
+
 @dataclass
 class ValidationResult:
     """Структурированный результат проверки"""
     is_valid: bool
     errors: Dict[str, List[str]] = field(default_factory=dict)
+
 
 class BookValidator:
     """

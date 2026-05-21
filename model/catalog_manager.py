@@ -1,4 +1,5 @@
 from typing import Optional, List
+
 from .book import Book  # Убедитесь, что импорт правильный
 from .xml_handler import XMLHandler
 
@@ -83,8 +84,8 @@ class CatalogManager:
         deleted_count = initial_count - len(self.books)
 
         # if deleted_count > 0:
-            # self.notify_observers()  # <--- ВАЖНО: Сообщаем об изменении
-            #self.save_to_xml()  # <--- Опционально: автосохранение
+        # self.notify_observers()  # <--- ВАЖНО: Сообщаем об изменении
+        # self.save_to_xml()  # <--- Опционально: автосохранение
 
         return deleted_count
 

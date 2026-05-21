@@ -1,10 +1,10 @@
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QHeaderView,
-    QPushButton, QLabel, QMenuBar, QToolBar,
-    QSpinBox, QMessageBox
+    QPushButton, QLabel, QToolBar,
+    QMessageBox
 )
-from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QSizePolicy
 
 

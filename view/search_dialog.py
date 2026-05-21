@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QSpinBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QComboBox, QGroupBox, QFormLayout,
                              QWidget, QHeaderView)
-from PyQt6.QtCore import Qt
 
 
 class SearchDialog(QDialog):
@@ -217,7 +216,6 @@ class SearchDialog(QDialog):
         self.current_page = 0
         self._update_table()
         # self.table.setRowCount(0)
-
 
     @property
     def total_pages(self):

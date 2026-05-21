@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QSpinBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QComboBox, QGroupBox, QFormLayout,
                              QWidget, QMessageBox, QHeaderView)
-from PyQt6.QtCore import Qt
 
 
 class DeleteDialog(QDialog):

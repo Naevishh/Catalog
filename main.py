@@ -1,12 +1,12 @@
 import sys
-import os
+
 from PyQt6.QtWidgets import QApplication
 
+from controller.catalog_controller import CatalogController
+from model.catalog_manager import CatalogManager
 # Импорты архитектуры MVC
 from model.xml_handler import XMLHandler
-from model.catalog_manager import CatalogManager
 from view.main_window import MainWindow
-from controller.catalog_controller import CatalogController
 
 
 def main():
