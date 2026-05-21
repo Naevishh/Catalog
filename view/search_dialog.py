@@ -1,4 +1,3 @@
-# views/search_dialog.py
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QSpinBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QComboBox, QGroupBox, QFormLayout,
@@ -17,7 +16,7 @@ class SearchDialog(QDialog):
 
     def __init__(self, parent=None, controller=None):
         super().__init__(parent)
-        self.controller = controller  # ссылка на контроллер (опционально, для тестов)
+        self.controller = controller
         self.setWindowTitle("Поиск книг")
         self.resize(900, 650)
 
@@ -29,11 +28,9 @@ class SearchDialog(QDialog):
         self._connect_signals()
         self.vol_max.setValue(10000)
 
-    # ================== ИНИЦИАЛИЗАЦИЯ UI ==================
     def _init_ui(self):
         layout = QVBoxLayout(self)
 
-        # 1. Панель условий поиска (Вариант 15)
         search_group = QGroupBox("Условия поиска")
         form = QFormLayout()
 
@@ -46,7 +43,6 @@ class SearchDialog(QDialog):
         self.title_edit = QLineEdit()
         self.title_edit.setPlaceholderText("Название книги")
 
-        # Число томов: диапазон (нижний и верхний предел)
         self.vol_min = QSpinBox()
         self.vol_min.setRange(1, 10000)
         self.vol_max = QSpinBox()
@@ -58,7 +54,6 @@ class SearchDialog(QDialog):
         vol_widget = QWidget(self)
         vol_widget.setLayout(vol_layout)
 
-        # Тираж: больше/меньше заданной границы
         self.circ_op = QComboBox()
         self.circ_op.addItems(["", ">", "<"])
         self.circ_val = QSpinBox()
@@ -70,7 +65,6 @@ class SearchDialog(QDialog):
         circ_layout.setContentsMargins(0, 0, 0, 0)
         circ_widget.setLayout(circ_layout)
 
-        # Итого томов: больше/меньше заданной границы
         self.total_op = QComboBox()
         self.total_op.addItems(["", ">", "<"])
         self.total_val = QSpinBox()
@@ -91,7 +85,6 @@ class SearchDialog(QDialog):
         search_group.setLayout(form)
         layout.addWidget(search_group)
 
-        # Кнопки поиска/сброса
         btn_layout = QHBoxLayout()
         self.search_btn = QPushButton("🔍 Найти")
         self.reset_btn = QPushButton("🗑 Сбросить")
@@ -100,7 +93,6 @@ class SearchDialog(QDialog):
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
 
-        # Таблица результатов
         self.table = QTableWidget()
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
@@ -112,7 +104,6 @@ class SearchDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
-        # Пагинация (требование лабы: навигация + изменение размера страницы)
         nav = QHBoxLayout()
         self.btn_first = QPushButton("◀◀")
         self.btn_prev = QPushButton("◀")
@@ -136,8 +127,7 @@ class SearchDialog(QDialog):
 
         nav.addWidget(self.btn_first)
         nav.addWidget(self.btn_prev)
-        # nav.addWidget(QLabel("На стр.:"))
-        # nav.addWidget(self.spin_page_size)
+
         nav.addSpacing(15)
         nav.addWidget(self.lbl_info)
         nav.addStretch()
@@ -145,7 +135,6 @@ class SearchDialog(QDialog):
         nav.addWidget(self.btn_last)
         layout.addLayout(nav)
 
-    # ================== ОБРАБОТЧИКИ UI ==================
     def _connect_signals(self):
         self.search_btn.clicked.connect(self._perform_search)
         self.reset_btn.clicked.connect(self._reset_filters)
@@ -163,17 +152,14 @@ class SearchDialog(QDialog):
         publisher = self.publisher_edit.text().strip() or None
         title = self.title_edit.text().strip() or None
 
-        # Диапазон томов
         v_min = self.vol_min.value() if self.vol_min.value() > 0 else None
         v_max = self.vol_max.value() if self.vol_max.value() < 10000 else None
         volumes_range = (v_min, v_max) if (v_min is not None or v_max is not None) else None
 
-        # Тираж: оператор + значение
         circ_op = self.circ_op.currentText()
         circ_val = self.circ_val.value()
         circulation_limit = (circ_op, circ_val) if circ_op and circ_val > 0 else None
 
-        # Итого томов: оператор + значение
         total_op = self.total_op.currentText()
         total_val = self.total_val.value()
         total_volumes_limit = (total_op, total_val) if total_op and total_val > 0 else None
@@ -191,11 +177,10 @@ class SearchDialog(QDialog):
         """Выполняет поиск, делегируя задачу контроллеру."""
         criteria = self._collect_criteria()
 
-        # MVC: Вызов бизнес-логики через контроллер
         if self.controller:
             self.search_results = self.controller.perform_search(criteria)
         else:
-            self.search_results = []  # fallback для ручных тестов без контроллера
+            self.search_results = []
 
         self.current_page = 0
         self._update_table()
@@ -215,7 +200,6 @@ class SearchDialog(QDialog):
         self.search_results = []
         self.current_page = 0
         self._update_table()
-        # self.table.setRowCount(0)
 
     @property
     def total_pages(self):
@@ -229,7 +213,6 @@ class SearchDialog(QDialog):
 
         self.table.setRowCount(len(page_items))
         for row, book in enumerate(page_items):
-            # Имена атрибутов должны совпадать с вашим классом Book
             self.table.setItem(row, 0, QTableWidgetItem(book.name))
             self.table.setItem(row, 1, QTableWidgetItem(book.author))
             self.table.setItem(row, 2, QTableWidgetItem(book.publisher))
@@ -242,7 +225,6 @@ class SearchDialog(QDialog):
             f"Стр. {self.current_page + 1}/{self.total_pages} • Найдено: {total}"
         )
 
-        # Блокировка кнопок навигации
         self.btn_first.setEnabled(self.current_page > 0)
         self.btn_prev.setEnabled(self.current_page > 0)
         self.btn_next.setEnabled(self.current_page < self.total_pages - 1)

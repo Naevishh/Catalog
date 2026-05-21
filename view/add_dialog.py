@@ -16,7 +16,7 @@ class EditDialog(QDialog):
         self.setWindowTitle("Добавление книги")
         self.setMinimumWidth(450)
         self._init_ui()
-        self._setup_input_filters()  # Только фильтрация символов на лету
+        self._setup_input_filters()
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
@@ -32,7 +32,6 @@ class EditDialog(QDialog):
         self.publisher_edit = QLineEdit()
         self.publisher_edit.setPlaceholderText("Введите издательство")
 
-        # Используем константы из валидатора (единый источник)
         self.volumes_spin = QSpinBox()
         self.volumes_spin.setRange(BookValidator.MIN_VOLUMES, BookValidator.MAX_VOLUMES)
         self.volumes_spin.setValue(1)
@@ -55,11 +54,9 @@ class EditDialog(QDialog):
         group.setLayout(form)
         layout.addWidget(group)
 
-        # Автопересчёт
         self.volumes_spin.valueChanged.connect(self._update_total)
         self.circulation_spin.valueChanged.connect(self._update_total)
 
-        # Кнопки
         btn_layout = QHBoxLayout()
         save_btn = QPushButton("💾 Сохранить")
         cancel_btn = QPushButton("❌ Отмена")
@@ -97,7 +94,6 @@ class EditDialog(QDialog):
 
     def _save(self):
         """Делегирование проверки в BookValidator"""
-        # Сброс подсветки
         for w in (self.title_edit, self.author_edit, self.publisher_edit):
             self._highlight_field(w, False)
 
@@ -124,7 +120,6 @@ class EditDialog(QDialog):
 
             QMessageBox.warning(self, "Ошибка валидации", "• " + "\n• ".join(error_msgs))
 
-            # Фокус на первом проблемном поле
             if "name" in result.errors:
                 self.title_edit.setFocus()
             elif "author" in result.errors:

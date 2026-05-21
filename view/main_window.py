@@ -14,17 +14,17 @@ class MainWindow(QMainWindow):
     Отвечает только за отрисовку интерфейса и реакцию на действия пользователя.
     Ничего не знает о Model и бизнес-логике.
     """
-    # Сигналы: "крики" интерфейса, которые ловит Controller
+
     request_add = pyqtSignal()
     request_search = pyqtSignal()
     request_delete = pyqtSignal()
     request_save = pyqtSignal()
     request_load = pyqtSignal()
-    page_changed = pyqtSignal(int)  # номер страницы
+    page_changed = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.controller = None  # устанавливается извне (Dependency Injection)
+        self.controller = None
         self.items_per_page = 10
         self.current_page = 0
         self.total_pages = 1
@@ -37,12 +37,10 @@ class MainWindow(QMainWindow):
         """Внедрение контроллера. Вызывается из main.py после создания объектов."""
         self.controller = controller
 
-    # ================== ИНИЦИАЛИЗАЦИЯ UI ==================
     def _init_ui(self):
         self.setWindowTitle("Каталог книг (Вариант 15)")
         self.resize(1000, 650)
 
-        # 1. Меню
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("Файл")
         file_menu.addAction("Сохранить в XML...", self._on_save)
@@ -55,14 +53,12 @@ class MainWindow(QMainWindow):
         actions_menu.addAction("Поиск...", self._on_search)
         actions_menu.addAction("Удалить по условию...", self._on_delete)
 
-        # 2. Панель инструментов (дублирует меню)
         toolbar = QToolBar("Инструменты")
         self.addToolBar(toolbar)
         toolbar.addAction("➕ Добавить", self._on_add)
         toolbar.addAction("🔍 Поиск", self._on_search)
         toolbar.addAction("🗑 Удалить", self._on_delete)
 
-        # 3. Центральная область
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
@@ -78,7 +74,6 @@ class MainWindow(QMainWindow):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
-        # 4. Пагинация (по ТЗ лабы)
         nav = QHBoxLayout()
         self.btn_first = QPushButton("◀◀")
         self.btn_prev = QPushButton("◀")
@@ -87,17 +82,16 @@ class MainWindow(QMainWindow):
 
         self.lbl_info = QLabel("Стр. 0/0 • Всего: 0")
         self.lbl_info.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # разрешаем метке занимать свободное место
+
         self.lbl_info.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         for btn in [self.btn_first, self.btn_prev, self.btn_next, self.btn_last]:
             btn.setFixedWidth(50)
 
-        # 🔧 Ключевое исправление: stretch с обеих сторон для равномерного распределения
         nav.addStretch()
         nav.addWidget(self.btn_first)
         nav.addWidget(self.btn_prev)
-        # nav.addWidget(self.spin_page_size)  # если нужно — добавьте спиннер в панель
+
         nav.addWidget(self.lbl_info)
         nav.addWidget(self.btn_next)
         nav.addWidget(self.btn_last)
@@ -105,7 +99,6 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(nav)
 
-    # ================== ВНУТРЕННИЕ ОБРАБОТЧИКИ UI ==================
     def _connect_ui_signals(self):
         self.btn_first.clicked.connect(lambda: self._go_to_page(0))
         self.btn_prev.clicked.connect(lambda: self._go_to_page(self.current_page - 1))
@@ -115,9 +108,8 @@ class MainWindow(QMainWindow):
     def _go_to_page(self, page: int):
         if 0 <= page < self.total_pages:
             self.current_page = page
-            self.page_changed.emit(page)  # Сообщаем контроллеру: "нужна страница X"
+            self.page_changed.emit(page)
 
-    # Эмитим сигналы при кликах по меню/кнопкам
     def _on_add(self):
         self.request_add.emit()
 
@@ -133,7 +125,6 @@ class MainWindow(QMainWindow):
     def _on_load(self):
         self.request_load.emit()
 
-    # ================== МЕТОДЫ ДЛЯ CONTROLLER ==================
     def update_table(self, books: list, page: int, page_size: int, total_count: int):
         """Controller вызывает этот метод, чтобы отрисовать данные."""
         self.table.setRowCount(len(books))
@@ -150,13 +141,11 @@ class MainWindow(QMainWindow):
         self.total_count = total_count
         self.total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
 
-        # Обновляем инфо-панель
         self.lbl_info.setText(
             f"Стр. {self.current_page + 1}/{self.total_pages} • "
             f"Всего: {self.total_count} • Показано: {len(books)}"
         )
 
-        # Состояние кнопок пагинации
         self.btn_first.setEnabled(self.current_page > 0)
         self.btn_prev.setEnabled(self.current_page > 0)
         self.btn_next.setEnabled(self.current_page < self.total_pages - 1)

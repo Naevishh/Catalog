@@ -60,7 +60,7 @@ class XMLBookReader:
                 self.current_book = None
             elif self.current_book is not None and self.current_field == tag:
                 self.current_book[tag] = "".join(self.char_buffer).strip()
-                self.current_field = None  # Сбрасываем только когда поле действительно закрыто
+                self.current_field = None
 
     def parse(self) -> List[Dict[str, str]]:
         parser = xml.sax.make_parser()
@@ -97,16 +97,13 @@ class XMLBookWriter:
         self.filepath.write_text(self.doc.toprettyxml(indent="  "), encoding="utf-8")
 
 
-# (Facade)
 class XMLHandler:
     def __init__(self, filename: str = "catalog_example.xml", root_tag: str = "catalog"):
         self.filename = filename
         self.root_tag = root_tag
 
-        # 1. Гарантируем создание файла
         XMLInitializer(filename, root_tag)
 
-        # 2. Создаём компоненты чтения и записи
         self._reader = XMLBookReader(filename)
         self._writer = XMLBookWriter(filename, root_tag)
 
@@ -126,41 +123,12 @@ class XMLHandler:
         """Перезагружает DOM из файла (полезно, если файл изменился извне)."""
         self._writer = XMLBookWriter(self.filename, self.root_tag)
 
-    # в xml_handler.py, внутри класса CatalogManager
     def replace_all(self, books_list: list[dict]) -> None:
         """Полностью заменяет содержимое каталога новыми данными."""
         root = self._writer.doc.documentElement
-        # Удаляем все старые <book>
+
         for old in root.getElementsByTagName('book'):
             old.parentNode.removeChild(old)
-        # Добавляем новые
+
         for data in books_list:
             self._writer.add_book(data)
-
-# if __name__ == "__main__":
-#     # # Пример XML-данных
-#     # xml_data = """
-#     # <catalog>
-#     #     <book id="1" category="books">
-#     #         <title>Python Basics</title>
-#     #         <author>John Doe</author>
-#     #     </book>
-#     #     <book id="2" category="electronics">
-#     #         <title>Laptop</title>
-#     #         <author>Jane Smith</author>
-#     #     </book>
-#     # </catalog>
-#     # """
-#
-#     real_books = [
-#         # Русская классика
-#         ('Война и мир', 'Лев Толстой', 'Эксмо', 4, 50000),
-#         ('Преступление и наказание', 'Фёдор Достоевский', 'АСТ', 1, 30000),
-#         ('Анна Каренина', 'Лев Толстой', 'Азбука', 2, 25000),
-#         ('Мастер и Маргарита', 'Михаил Булгаков', 'Эксмо', 1, 100000),
-#         ('Тихий Дон', 'Михаил Шолохов', 'АСТ', 4, 20000),
-#         ('Доктор Живаго', 'Борис Пастернак', 'Азбука', 1, 15000),
-#         ('Отцы и дети', 'Иван Тургенев', 'Просвещение', 1, 50000),
-#         ('Герой нашего времени', 'Михаил Лермонтов', 'Дрофа', 1, 40000),
-#         ('Мёртвые души', 'Николай Гоголь', 'Эксмо', 1, 35000),
-#         ('Евгений Онегин', 'Александр Пушкин', 'Просвещение', 1, 100000)]

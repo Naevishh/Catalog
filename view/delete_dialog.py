@@ -1,4 +1,3 @@
-# views/delete_dialog.py
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QSpinBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QComboBox, QGroupBox, QFormLayout,
@@ -19,7 +18,7 @@ class DeleteDialog(QDialog):
     def __init__(self, parent=None, controller=None):
         super().__init__(parent)
         self.controller = controller
-        self.deleted_count = 0  # Возвращается в controller после accept()
+        self.deleted_count = 0
         self.preview_results = []
 
         self.setWindowTitle("Удаление записей по условию")
@@ -28,11 +27,9 @@ class DeleteDialog(QDialog):
         self._init_ui()
         self._connect_signals()
 
-    # ================== ИНИЦИАЛИЗАЦИЯ UI ==================
     def _init_ui(self):
         layout = QVBoxLayout(self)
 
-        # 1. Панель условий (полностью соответствует Варианту 15)
         cond_group = QGroupBox("Условия удаления")
         form = QFormLayout()
 
@@ -45,7 +42,6 @@ class DeleteDialog(QDialog):
         self.title_edit = QLineEdit()
         self.title_edit.setPlaceholderText("Название книги")
 
-        # Число томов: диапазон
         self.vol_min = QSpinBox()
         self.vol_min.setRange(1, 10000)
         self.vol_max = QSpinBox()
@@ -57,7 +53,6 @@ class DeleteDialog(QDialog):
         vol_widget = QWidget()
         vol_widget.setLayout(vol_layout)
 
-        # Тираж: больше/меньше
         self.circ_op = QComboBox()
         self.circ_op.addItems(["", ">", "<"])
         self.circ_val = QSpinBox()
@@ -69,7 +64,6 @@ class DeleteDialog(QDialog):
         circ_layout.setContentsMargins(0, 0, 0, 0)
         circ_widget.setLayout(circ_layout)
 
-        # Итого томов: больше/меньше
         self.total_op = QComboBox()
         self.total_op.addItems(["", ">", "<"])
         self.total_val = QSpinBox()
@@ -90,7 +84,6 @@ class DeleteDialog(QDialog):
         cond_group.setLayout(form)
         layout.addWidget(cond_group)
 
-        # 2. Кнопки управления
         btn_layout = QHBoxLayout()
         self.preview_btn = QPushButton("👁 Предпросмотр")
         self.delete_btn = QPushButton("🗑 Удалить")
@@ -102,7 +95,6 @@ class DeleteDialog(QDialog):
         btn_layout.addWidget(self.cancel_btn)
         layout.addLayout(btn_layout)
 
-        # 3. Таблица предпросмотра
         self.lbl_preview_info = QLabel("Нажмите «Предпросмотр», чтобы увидеть записи для удаления")
         layout.addWidget(self.lbl_preview_info)
 
@@ -117,7 +109,6 @@ class DeleteDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
-    # ================== ОБРАБОТЧИКИ UI ==================
     def _connect_signals(self):
         self.preview_btn.clicked.connect(self._preview)
         self.delete_btn.clicked.connect(self._execute_delete)
@@ -154,7 +145,6 @@ class DeleteDialog(QDialog):
         """Предпросмотр: делегирует поиск контроллеру"""
         criteria = self._collect_criteria()
 
-        # Проверка: задано ли хотя бы одно условие
         if all(v is None for v in criteria.values()):
             QMessageBox.warning(self, "Предпросмотр", "Укажите хотя бы одно условие для поиска.")
             return
@@ -202,5 +192,4 @@ class DeleteDialog(QDialog):
             else:
                 self.deleted_count = 0
 
-            # Диалог закрывается, controller/main_window покажет итоговое сообщение
             self.accept()
