@@ -8,7 +8,6 @@ from validators.book_validator import BookValidator
 
 
 class EditDialog(QDialog):
-    """VIEW: Отвечает ТОЛЬКО за UI, маршрутизацию событий и делегирование валидации"""
 
     def __init__(self, parent=None):
         super().__init__(parent)

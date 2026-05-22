@@ -7,11 +7,10 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
 class SearchDialog(QDialog):
     """
     VIEW (Диалог поиска)
-    Отвечает ТОЛЬКО за:
+    Отвечает за:
     1. Отрисовку условий поиска и таблицы результатов
     2. Сбор критериев из интерфейса
     3. Постраничный вывод результатов (требование лабы)
-    НЕ ИМПОРТИРУЕТ Model. Делегирует поиск контроллеру.
     """
 
     def __init__(self, parent=None, controller=None):

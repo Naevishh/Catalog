@@ -112,7 +112,7 @@ class XMLHandler:
         return self._reader.parse()
 
     def add_book(self, book_data: Dict[str, str]) -> None:
-        """Добавляет книгу в DOM-дерево (без сохранения на диск)."""
+        """Добавляет книгу в DOM-дерево."""
         self._writer.add_book(book_data)
 
     def save(self) -> None:
@@ -120,7 +120,7 @@ class XMLHandler:
         self._writer.save()
 
     def reload(self) -> None:
-        """Перезагружает DOM из файла (полезно, если файл изменился извне)."""
+        """Перезагружает DOM из файла."""
         self._writer = XMLBookWriter(self.filename, self.root_tag)
 
     def replace_all(self, books_list: list[dict]) -> None:

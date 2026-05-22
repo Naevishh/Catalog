@@ -37,7 +37,7 @@ class CatalogController:
         self._refresh_main_view(page)
 
     def _refresh_main_view(self, page: int = None):
-        """Обновление таблицы главного окна с учётом пагинации (требование лабы)"""
+        """Обновление таблицы главного окна с учётом пагинации"""
         if page is None:
             page = self.view.current_page
 
@@ -67,7 +67,7 @@ class CatalogController:
                 self.view.show_error("Ошибка добавления", str(e))
 
     def _handle_search(self):
-        """Открытие диалога поиска (результаты выводятся ВНУТРИ диалога, по ТЗ)"""
+        """Открытие диалога поиска"""
         dlg = SearchDialog(parent=self.view, controller=self)
         dlg.exec()
 

@@ -14,7 +14,6 @@ class Book:
     def __init__(self, name: str, author: str, publisher: str,
                  circulation: int, volumes: int, book_id: str = None):
 
-        # Быстрая проверка типов и диапазонов (fail-fast при загрузке из файла)
         if not isinstance(name, str) or len(name.strip()) < 2:
             raise ValueError("Название: строка, минимум 2 символа")
         if not isinstance(author, str) or len(author.strip()) < 3:

@@ -12,7 +12,6 @@ class ValidationResult:
 class BookValidator:
     """
     Доменная валидация для книг (Вариант 15)
-    Не зависит от PyQt. Можно легко покрыть юнит-тестами.
     """
     MIN_TITLE_LEN = 2
     MAX_TITLE_LEN = 200

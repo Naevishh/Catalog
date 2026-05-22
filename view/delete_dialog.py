@@ -7,12 +7,6 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
 class DeleteDialog(QDialog):
     """
     VIEW (Диалог удаления)
-    Отвечает ТОЛЬКО за:
-    1. Отрисовку условий удаления и таблицы предпросмотра
-    2. Сбор критериев из интерфейса
-    3. Вызов предпросмотра и удаление через контроллер
-    4. Возврат количества удалённых записей (deleted_count)
-    НЕ ИМПОРТИРУЕТ Model. Не выполняет бизнес-логику.
     """
 
     def __init__(self, parent=None, controller=None):
@@ -115,7 +109,7 @@ class DeleteDialog(QDialog):
         self.cancel_btn.clicked.connect(self.reject)
 
     def _collect_criteria(self) -> dict:
-        """Сбор условий в формат, совместимый с CatalogManager.find_book()"""
+        """Сбор условий"""
         author = self.author_edit.text().strip() or None
         publisher = self.publisher_edit.text().strip() or None
         title = self.title_edit.text().strip() or None

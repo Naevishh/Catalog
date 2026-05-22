@@ -11,8 +11,7 @@ from PyQt6.QtWidgets import QSizePolicy
 class MainWindow(QMainWindow):
     """
     VIEW (Представление)
-    Отвечает только за отрисовку интерфейса и реакцию на действия пользователя.
-    Ничего не знает о Model и бизнес-логике.
+    Отвечает за отрисовку интерфейса и реакцию на действия пользователя.
     """
 
     request_add = pyqtSignal()
