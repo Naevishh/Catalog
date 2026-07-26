@@ -30,6 +30,8 @@ class CatalogController:
         self.view.request_delete.connect(self._handle_delete)
         self.view.request_save.connect(self._handle_save)
         self.view.request_load.connect(self._handle_load)
+        self.view.request_save_db.connect(self._handle_save_db)
+        self.view.request_load_db.connect(self._handle_load_db)
         self.view.page_changed.connect(self._handle_page_change)
 
     def _handle_page_change(self, page: int):
@@ -99,6 +101,23 @@ class CatalogController:
         except Exception as e:
             self.view.show_error("Ошибка загрузки", str(e))
 
+    def _handle_save_db(self, filename: str):
+        """Сохранение в базу данных"""
+        try:
+            self.model.save_to_db(filename)
+            self.view.show_info("Сохранение", "Каталог успешно сохранён в базу данных.")
+        except Exception as e:
+            self.view.show_error("Ошибка сохранения", str(e))
+
+    def _handle_load_db(self, filename: str):
+        """Загрузка из бд"""
+        try:
+            self.model.load_from_db(filename)
+            self.view.show_info("Загрузка", "Каталог успешно загружен из базы данных.")
+            self._refresh_main_view(0)
+        except Exception as e:
+            self.view.show_error("Ошибка загрузки", str(e))
+
     def perform_search(self, criteria: Dict) -> List:
         """Вызывается из SearchDialog. Делегирует поиск модели."""
         return self.model.find_book(**criteria)
@@ -106,3 +125,9 @@ class CatalogController:
     def perform_delete(self, criteria: Dict) -> int:
         """Вызывается из DeleteDialog. Делегирует удаление модели."""
         return self.model.delete_by_criteria(**criteria)
+
+    def cleanup(self):
+        """Вызывается при закрытии приложения для освобождения ресурсов"""
+        if hasattr(self.model, 'db_handler'):
+            self.model.db_handler.close_all_connections()
+            print("Соединения с базами данных закрыты.")

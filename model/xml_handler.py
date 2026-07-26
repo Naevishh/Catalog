@@ -23,8 +23,6 @@ class XMLInitializer:
     def _ensure_initialized(self) -> None:
         if self.filepath.exists():
             return
-        else:
-            print("file doesnt exist!!")
 
         doc = minidom.Document()
         root = doc.createElement(self.root_tag)

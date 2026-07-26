@@ -108,13 +108,6 @@ out/
 # Test files (уже есть)
 test.py
 test2.py
-test3.py
-
-# Generated output files (уже есть)
-output.xml
-
-# Test data (уже есть)
-data/test.xml
 
 # OS files
 .DS_Store

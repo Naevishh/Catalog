@@ -1,12 +1,14 @@
 from typing import Optional, List
 
 from .book import Book
+from .db_handler import DatabaseHandler
 from .xml_handler import XMLHandler
 
 
 class CatalogManager:
-    def __init__(self, xml_handler: XMLHandler):
+    def __init__(self, xml_handler: XMLHandler, db_handler: DatabaseHandler):
         self.xml_handler = xml_handler
+        self.db_handler=db_handler
         self.books: List[Book] = []
         self.observers = []
 
@@ -18,6 +20,14 @@ class CatalogManager:
         raw_books = [self._to_dict(b) for b in self.books]
         self.xml_handler.replace_all(raw_books)
         self.xml_handler.save()
+
+    def load_from_db(self, filename: str) -> None:
+        raw_books = self.db_handler.get_books(filename)
+        self.books = [self._to_book(d) for d in raw_books]
+
+    def save_to_db(self, filename: str) -> None:
+        raw_books = [self._to_dict(b) for b in self.books]
+        self.db_handler.replace_all(filename, raw_books)
 
     @staticmethod
     def _to_book(d: dict) -> Book:

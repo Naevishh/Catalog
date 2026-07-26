@@ -1,9 +1,10 @@
 from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QHeaderView,
     QPushButton, QLabel, QToolBar,
-    QMessageBox
+    QMessageBox, QFileDialog
 )
 from PyQt6.QtWidgets import QSizePolicy
 
@@ -19,6 +20,8 @@ class MainWindow(QMainWindow):
     request_delete = pyqtSignal()
     request_save = pyqtSignal()
     request_load = pyqtSignal()
+    request_save_db = pyqtSignal(str)
+    request_load_db = pyqtSignal(str)
     page_changed = pyqtSignal(int)
 
     def __init__(self, parent=None):
@@ -44,6 +47,8 @@ class MainWindow(QMainWindow):
         file_menu = menu_bar.addMenu("Файл")
         file_menu.addAction("Сохранить в XML...", self._on_save)
         file_menu.addAction("Загрузить из XML...", self._on_load)
+        file_menu.addAction("Сохранить в базу данных...", self._on_save_db)
+        file_menu.addAction("Загрузить из базы данных...", self._on_load_db)
         file_menu.addSeparator()
         file_menu.addAction("Выход", self.close)
 
@@ -124,6 +129,14 @@ class MainWindow(QMainWindow):
     def _on_load(self):
         self.request_load.emit()
 
+    def _on_save_db(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Сохранить каталог", "data", "SQLite Files (*.db)")
+        if filename: self.request_save_db.emit(filename)
+
+    def _on_load_db(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Загрузить каталог", "data", "SQLite Files (*.db)")
+        if filename: self.request_load_db.emit(filename)
+
     def update_table(self, books: list, page: int, page_size: int, total_count: int):
         """Controller вызывает этот метод, чтобы отрисовать данные."""
         self.table.setRowCount(len(books))
@@ -161,3 +174,15 @@ class MainWindow(QMainWindow):
             self, title, message,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         ) == QMessageBox.StandardButton.Yes
+
+    def closeEvent(self, event: QCloseEvent):
+        """
+        Перехватывает событие закрытия окна.
+        Вызывается при нажатии на крестик, Alt+F4 или self.close().
+        """
+        # Опционально: спрашиваем подтверждение перед выходом
+        if self.controller:
+            self.controller.cleanup()
+
+        # Разрешаем закрытие окна
+        event.accept()

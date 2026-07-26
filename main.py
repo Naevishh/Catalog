@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import QApplication
 
 from controller.catalog_controller import CatalogController
 from model.catalog_manager import CatalogManager
+from model.db_handler import DatabaseHandler
 from model.xml_handler import XMLHandler
 from view.main_window import MainWindow
 
@@ -16,7 +17,8 @@ def main():
     DEFAULT_XML = "catalog_example.xml"
 
     xml_handler = XMLHandler(DEFAULT_XML)
-    model = CatalogManager(xml_handler)
+    db_handler = DatabaseHandler()
+    model = CatalogManager(xml_handler, db_handler)
 
     view = MainWindow()
 
