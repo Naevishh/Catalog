@@ -85,17 +85,8 @@ class DatabaseHandler:
             return result_books
 
     def replace_all(self, filename: str, books_list: list[dict]) -> None:
-
-        if not filename: print("not filename")
-        if not books_list: print("not books_list")
-
         with self._manager.get_session(filename) as session:
             try:
-                print(books_list[0]["name"])
-                print(books_list[0]["author"])
-                print()
-                print(books_list[1]["name"])
-                print(books_list[1]["author"])
                 for b in books_list:
                     new_book = BookBase(
                         name=b.get("name", ""),
@@ -111,7 +102,6 @@ class DatabaseHandler:
                 raise
             else:
                 session.commit()
-            # commit произойдёт автоматически при выходе из with
 
     def close_all_connections(self):
         """
