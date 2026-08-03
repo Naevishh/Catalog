@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from .book import Book
-from .db_handler import DatabaseHandler
+from .db_handler import DatabaseHandler, _cleanup_db
 from .xml_handler import XMLHandler
 
 
@@ -21,13 +21,13 @@ class CatalogManager:
         self.xml_handler.replace_all(raw_books)
         self.xml_handler.save()
 
-    def load_from_db(self, filename: str) -> None:
-        raw_books = self.db_handler.get_books(filename)
+    def load_from_db(self) -> None:
+        raw_books = self.db_handler.get_books()
         self.books = [self._to_book(d) for d in raw_books]
 
-    def save_to_db(self, filename: str) -> None:
+    def save_to_db(self) -> None:
         raw_books = [self._to_dict(b) for b in self.books]
-        self.db_handler.replace_all(filename, raw_books)
+        self.db_handler.replace_all(raw_books)
 
     @staticmethod
     def _to_book(d: dict) -> Book:
@@ -129,3 +129,6 @@ class CatalogManager:
             result.append(book)
 
         return result
+
+    def cleanup_db(self):
+        _cleanup_db()

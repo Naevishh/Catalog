@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QHeaderView,
     QPushButton, QLabel, QToolBar,
-    QMessageBox, QFileDialog
+    QMessageBox
 )
 from PyQt6.QtWidgets import QSizePolicy
 
@@ -20,8 +20,8 @@ class MainWindow(QMainWindow):
     request_delete = pyqtSignal()
     request_save = pyqtSignal()
     request_load = pyqtSignal()
-    request_save_db = pyqtSignal(str)
-    request_load_db = pyqtSignal(str)
+    request_save_db = pyqtSignal()
+    request_load_db = pyqtSignal()
     page_changed = pyqtSignal(int)
 
     def __init__(self, parent=None):
@@ -130,12 +130,10 @@ class MainWindow(QMainWindow):
         self.request_load.emit()
 
     def _on_save_db(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Сохранить каталог", "data", "SQLite Files (*.db)")
-        if filename: self.request_save_db.emit(filename)
+        self.request_save_db.emit()
 
     def _on_load_db(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Загрузить каталог", "data", "SQLite Files (*.db)")
-        if filename: self.request_load_db.emit(filename)
+        self.request_load_db.emit()
 
     def update_table(self, books: list, page: int, page_size: int, total_count: int):
         """Controller вызывает этот метод, чтобы отрисовать данные."""

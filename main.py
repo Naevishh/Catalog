@@ -7,12 +7,18 @@ from model.catalog_manager import CatalogManager
 from model.db_handler import DatabaseHandler
 from model.xml_handler import XMLHandler
 from view.main_window import MainWindow
+from init_db import init_database
+from seed_db import seed_database
 
 
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Каталог книг (Вариант 15)")
     app.setStyle("Fusion")
+
+    # Автоматически инициализируем БД при запуске
+    init_database()
+    seed_database()
 
     DEFAULT_XML = "catalog_example.xml"
 

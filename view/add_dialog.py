@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QSpinBox, QPushButton, QFormLayout,
                              QMessageBox, QGroupBox)
 
-from validators.book_validator import BookValidator
+from utils.book_validator import BookValidator
 
 
 class EditDialog(QDialog):

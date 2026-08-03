@@ -101,18 +101,18 @@ class CatalogController:
         except Exception as e:
             self.view.show_error("Ошибка загрузки", str(e))
 
-    def _handle_save_db(self, filename: str):
+    def _handle_save_db(self):
         """Сохранение в базу данных"""
         try:
-            self.model.save_to_db(filename)
+            self.model.save_to_db()
             self.view.show_info("Сохранение", "Каталог успешно сохранён в базу данных.")
         except Exception as e:
             self.view.show_error("Ошибка сохранения", str(e))
 
-    def _handle_load_db(self, filename: str):
+    def _handle_load_db(self):
         """Загрузка из бд"""
         try:
-            self.model.load_from_db(filename)
+            self.model.load_from_db()
             self.view.show_info("Загрузка", "Каталог успешно загружен из базы данных.")
             self._refresh_main_view(0)
         except Exception as e:
@@ -128,6 +128,6 @@ class CatalogController:
 
     def cleanup(self):
         """Вызывается при закрытии приложения для освобождения ресурсов"""
-        if hasattr(self.model, 'db_handler'):
-            self.model.db_handler.close_all_connections()
-            print("Соединения с базами данных закрыты.")
+        self.model.cleanup_db()
+        print("Соединение с базой данных закрыто.")
+

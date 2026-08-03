@@ -1,17 +1,9 @@
 import uuid
 import xml.sax
-from pathlib import Path
 from typing import Dict, List, Optional
 from xml.dom import minidom
 
-
-def get_filepath(file_name: str) -> Path:
-    current_module_dir = Path(__file__).resolve().parent
-    project_root = current_module_dir.parent
-    data_dir = project_root / "data"
-    if not data_dir.exists():
-        data_dir = current_module_dir / "data"
-    return data_dir / file_name
+from utils.get_filepath import get_filepath
 
 
 class XMLInitializer:
